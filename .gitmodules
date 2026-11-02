@@ -44,3 +44,9 @@
 [submodule "pglite/other_extensions/pgaudit"]
 	path = pglite/other_extensions/pgaudit
 	url = https://github.com/pgaudit/pgaudit.git
+[submodule "pglite/other_extensions/timescaledb"]
+	path = pglite/other_extensions/timescaledb
+	url = https://github.com/endosome/timescaledb.git
+[submodule "pglite/other_extensions/timescaledb_toolkit"]
+	path = pglite/other_extensions/timescaledb_toolkit
+	url = https://github.com/endosome/timescaledb-toolkit.git

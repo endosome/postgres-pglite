@@ -13,7 +13,8 @@ SUBDIRS = \
 		plpgsql_check \
 		pgaudit \
 		pg_repack \
-		hypopg
+		hypopg \
+		timescaledb
 
 prefix ?= /pglite
 EXTENSIONS_BUILD_ROOT := /tmp/extensions/build
@@ -26,6 +27,10 @@ EXTENSIONS += postgis
 # background worker, which cannot run in WASM. It is built SQL-only via its own
 # dist rule below with NO_BGW=1 (which is an officially supported pg_partman build mode).
 EXTENSIONS += pg_partman
+
+# timescaledb_toolkit is written in Rust (pgrx) and built by its own script, in the builder image
+# with Rust (see build-with-docker.sh); it is not in SUBDIRS.
+EXTENSIONS += timescaledb_toolkit
 
 # Default target: build tarballs for all contribs
 dist: $(addsuffix .tar.gz,$(EXTENSIONS))
@@ -81,6 +86,20 @@ pg_partman.tar.gz:
 	cd $(EXTENSIONS_BUILD_ROOT)/pg_partman/$(prefix) && \
 	files=$$(find . -type f -o -type l | sed 's|^\./||') && \
 	tar -czf $(ARCHIVE_DIR)/pg_partman.tar.gz $$files
+
+# The .imports file lists the symbols PGlite has to export for the module; src/backend's
+# pglite-exported-functions reads it with the other extensions' imports.
+timescaledb_toolkit.tar.gz:
+	@echo "=== Building timescaledb_toolkit ==="
+	@# without emmake's compiler variables, as cargo compiles build scripts for the host, and
+	@# without make's jobserver, which fails in cargo and rustc (os error 11)
+	env -u CC -u CXX -u AR -u LD -u NM -u RANLIB -u CFLAGS -u CXXFLAGS -u CPPFLAGS -u LDFLAGS \
+		-u MAKEFLAGS -u MFLAGS -u MAKELEVEL -u CARGO_MAKEFLAGS \
+		SRC=$(CURDIR)/timescaledb_toolkit PGLITE=$(prefix) CARGO_HOME=$(CURDIR)/timescaledb_toolkit/target-pglite/cargo-home \
+		bash timescaledb_toolkit/pglite/build.sh
+	mkdir -p $(ARCHIVE_DIR) '$(emscripten_extension_imports_dir)'
+	cp timescaledb_toolkit/target-pglite/timescaledb_toolkit.tar.gz $(ARCHIVE_DIR)/
+	cp timescaledb_toolkit/target-pglite/timescaledb_toolkit.imports '$(emscripten_extension_imports_dir)/'
 
 dist-postgis:
 	@echo "=== Adding proj data to postgis archive ==="

@@ -3,6 +3,10 @@
 DOCKER_WORKSPACE=$(pwd)
 echo "PGLITE_VERSION=${PGLITE_VERSION}"
 echo "DEBUG=${DEBUG}"
+
+# electricsql/pglite-builder plus Rust, for the extensions written in Rust (timescaledb_toolkit)
+BUILDER_IMAGE=pglite-builder-rust:6.0.5-1
+docker build -q -t ${BUILDER_IMAGE} pglite/other_extensions/timescaledb_toolkit/pglite > /dev/null || exit 1
   
 docker run $@ \
   --rm \
@@ -11,5 +15,5 @@ docker run $@ \
   --workdir=${DOCKER_WORKSPACE} \
   -v .:${DOCKER_WORKSPACE}:rw \
   -v ./dist:/pglite:rw \
-  electricsql/pglite-builder:6.0.5-1  \
+  ${BUILDER_IMAGE}  \
   ./build-pglite.sh
